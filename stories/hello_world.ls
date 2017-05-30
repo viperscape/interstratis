@@ -1,0 +1,4 @@
+root
+    emit "Hello World!"
+
+;

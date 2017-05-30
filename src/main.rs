@@ -3,29 +3,35 @@ extern crate rouille;
 
 use rouille::{Response};
 
-use std::fs;
-use std::path::PathBuf;
+mod stories;
+use stories::Stories;
 
 fn main() {
+    let stories = Stories::default();
+    
     rouille::start_server("localhost:6060", move |rqs| {
         router!(rqs,
                 (GET) (/) => {
-                    if let Ok(paths) = fs::read_dir("./stories/") {
-                        let mut stories: Vec<PathBuf> = vec![];
-                        for p in paths {
-                            if let Ok(p) = p {
-                                if p.path().is_file() {
-                                    stories.push(p.path())
-                                }
-                            }
-                        }
-                        
+                    let mut rsp = String::new();
+                    rsp.push_str("<h3>interstratis</h3><h4>interactive adventures</h4>");
+
+                    for p in stories.get_paths() {
+                        let s = format!("<a href='/stories/{}'>{}</a><br>", p,p);
+                        rsp.push_str(&s);
                     }
 
-                    Response::html("<h3>interstratis</h3>interactive adventures")
+                    Response::html(rsp)
+                },
+                (GET) (/stories/{story: String}) => {
+                    if let Some(e) = stories.parse(&story) {
+                        Response::html(format!("Story {}", story))
+                    }
+                    else {
+                        Response::html("<a href='/'>Nothing here</a>")
+                    }
                 },
                 _ => Response::html("<a href='/'>Nothing here</a>")
-        
-        )
+                
+                )
     });
 }
