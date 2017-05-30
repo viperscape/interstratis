@@ -3,6 +3,7 @@ name = "interstratis"
 version = "0.1.0"
 dependencies = [
  "lichen 0.2.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "rouille 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

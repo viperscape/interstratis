@@ -1,6 +1,10 @@
 #[macro_use]
 extern crate rouille;
 
+extern crate rand;
+
+use rand::random;
+
 use rouille::{Response};
 
 mod stories;
@@ -23,6 +27,10 @@ fn main() {
                     Response::html(rsp)
                 },
                 (GET) (/stories/{story: String}) => {
+                    let cache_id = random::<u32>();
+                    Response::redirect_301(format!("/stories/{}/{}",story,cache_id))
+                },
+                (GET) (/stories/{story: String}/{cache_id: u32}) => {
                     if let Some(e) = stories.parse(&story) {
                         Response::html(format!("Story {}", story))
                     }
