@@ -5,7 +5,7 @@ extern crate rand;
 
 use rand::random;
 
-use lichen::eval::{Eval,Evaluator};
+use lichen::eval::{Eval,Evaluator,EvaluatorState};
 use lichen::var::Var;
 use lichen::parse::Env;
 
@@ -24,7 +24,7 @@ use std::collections::HashMap;
 struct App {
     views: Vec<View>,
     stories: Stories,
-    cache: HashMap<u32, Env>,
+    cache: HashMap<u32, (EvaluatorState,Env)>,
 }
 
 impl Default for App {
@@ -63,8 +63,9 @@ fn main() {
                     if let Ok(mut app) = app.lock() {
                         let id = random::<u32>();
                         
-                        if let Some(env) = app.stories.parse(&story) {
-                            app.cache.insert(id,env);
+                        if let Some(mut env) = app.stories.parse(&story) {
+                            let state = { Evaluator::new(&mut env, &mut empty).save() };
+                            app.cache.insert(id, (state, env));
                         }
                         
                         return Response::redirect_301(format!("/stories/{}/{}",story,id))
@@ -74,20 +75,24 @@ fn main() {
                 },
                 (GET) (/stories/{story: String}/{id: u32}) => {
                     if let Ok(mut app) = app.lock() {
-                        if let Some(ref mut env) = app.cache.get_mut(&id) {
-                            let mut ev = Evaluator::new(env, &mut empty);
+                        if let Some(&mut (ref mut state, ref mut env)) = app.cache.get_mut(&id) {
+                            let mut rsp = format!("Story {}<br>", story);
+                            let mut ev = state.as_eval(env,&mut empty);
+                            
                             if let Some((mut vars,_node)) = ev.next() {
-                                let mut story = format!("Story {}<br>", story);
-                                
                                 for var in vars.drain(..) {
-                                    story.push_str(&var.to_string());
+                                    rsp.push_str(&var.to_string());
                                 }
-                                
-                                return Response::html(story)
                             }
                             else {
-                                return Response::html("<a href='/'>Finished</a>")
+                                rsp.push_str("<a href='/'>Finished</a>");
+                                let link = format!(" | <a href='/stories/{}/restart'>Restart</a>",id);
+                                rsp.push_str(&link);
                             }
+
+                            *state = ev.save();
+
+                            return Response::html(rsp)
                         }
                         else {
                             // cache id is invalid, some browsers cache this!
@@ -97,6 +102,13 @@ fn main() {
                     }
 
                     Response::empty_404()
+                },
+                (GET) (/stories/{id: u32}/restart) => {
+                    if let Ok(mut app) = app.lock() {
+                        let _ = app.cache.remove(&id);
+                    }
+                    
+                    Response::redirect_301("/")
                 },
                 _ => Response::html("<a href='/'>Nothing here</a>")
                 
