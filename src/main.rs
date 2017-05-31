@@ -82,6 +82,7 @@ fn main() {
                             if let Some((mut vars,_node)) = ev.next() {
                                 for var in vars.drain(..) {
                                     rsp.push_str(&var.to_string());
+                                    rsp.push_str("<br>");
                                 }
                             }
                             else {
