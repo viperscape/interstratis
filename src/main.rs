@@ -90,7 +90,9 @@ fn main() {
                             }
                         }
                         else {
-                            return Response::html("<a href='/'>Invalid Cache ID</a>")
+                            // cache id is invalid, some browsers cache this!
+                            // lets redirect them again to recreate the id
+                            return Response::redirect_301(format!("/stories/{}",story))
                         }
                     }
 
