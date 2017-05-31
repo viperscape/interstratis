@@ -46,43 +46,55 @@ fn main() {
         let mut empty = Empty;
         router!(rqs,
                 (GET) (/) => {
-                    let mut rsp = app.lock().unwrap().views[0].render();
-                    
-                    for p in app.lock().unwrap().stories.get_paths() {
-                        let s = format!("<a href='/stories/{}'>{}</a><br>", p,p);
-                        rsp.push_str(&s);
+                    if let Ok(mut app) = app.lock() {
+                        let mut rsp = app.views[0].render();
+                        
+                        for p in app.stories.get_paths() {
+                            let s = format!("<a href='/stories/{}'>{}</a><br>", p,p);
+                            rsp.push_str(&s);
+                        }
+
+                        return Response::html(rsp)
                     }
 
-                    Response::html(rsp)
+                    Response::empty_404()
                 },
                 (GET) (/stories/{story: String}) => {
-                    let id = random::<u32>();
-                    if let Some(env) = app.lock().unwrap().stories.parse(&story) {   
-                        app.lock().unwrap().cache.insert(id,env);
+                    if let Ok(mut app) = app.lock() {
+                        let id = random::<u32>();
+                        
+                        if let Some(env) = app.stories.parse(&story) {
+                            app.cache.insert(id,env);
+                        }
+                        
+                        return Response::redirect_301(format!("/stories/{}/{}",story,id))
                     }
-                    
-                    
-                    Response::redirect_301(format!("/stories/{}/{}",story,id))
+
+                    Response::empty_404()
                 },
                 (GET) (/stories/{story: String}/{id: u32}) => {
-                    if let Some(ref mut env) = app.lock().unwrap().cache.get_mut(&id) {
-                        let mut ev = Evaluator::new(env, &mut empty);
-                        if let Some((mut vars,_node)) = ev.next() {
-                            let mut story = format!("Story {}<br>", story);
-                            
-                            for var in vars.drain(..) {
-                                story.push_str(&var.to_string());
+                    if let Ok(mut app) = app.lock() {
+                        if let Some(ref mut env) = app.cache.get_mut(&id) {
+                            let mut ev = Evaluator::new(env, &mut empty);
+                            if let Some((mut vars,_node)) = ev.next() {
+                                let mut story = format!("Story {}<br>", story);
+                                
+                                for var in vars.drain(..) {
+                                    story.push_str(&var.to_string());
+                                }
+                                
+                                return Response::html(story)
                             }
-                            
-                            Response::html(story)
+                            else {
+                                return Response::html("<a href='/'>Finished</a>")
+                            }
                         }
                         else {
-                            Response::html("<a href='/'>Finished</a>")
+                            return Response::html("<a href='/'>Invalid Cache ID</a>")
                         }
                     }
-                    else {
-                        Response::html("<a href='/'>Nothing here</a>")
-                    }
+
+                    Response::empty_404()
                 },
                 _ => Response::html("<a href='/'>Nothing here</a>")
                 
