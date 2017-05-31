@@ -31,8 +31,8 @@ impl View {
     
     pub fn render (&mut self) -> String {
         let mut r = String::new();
-        let mut data = ::Empty;
-        let eval = Evaluator::new(&mut self.env, &mut data);
+        let mut empty = ::Empty;
+        let eval = Evaluator::new(&mut self.env, &mut empty);
 
         for (mut vars,_) in eval {
             for var in vars.drain(..) {
