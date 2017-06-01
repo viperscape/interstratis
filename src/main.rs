@@ -78,6 +78,9 @@ fn main() {
                             let mut ev = state.as_eval(env,&mut empty);
                             
                             if let Some((mut vars,_node)) = ev.next() {
+                                let link = format!("<a href='/stories/{}/{}'>continue</a></br>",story,id);
+                                rsp.push_str(&link);
+                                
                                 for var in vars.drain(..) {
                                     rsp.push_str(&var.to_string());
                                     rsp.push_str("<br>");

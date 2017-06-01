@@ -73,6 +73,25 @@ impl Eval for Data {
 
                 Some(Var::String(s))
             },
+            "link" => {
+                let url = vars[0].to_string();
+                let mut s = "<a href='".to_owned();
+                s.push_str(&url);
+                s.push('\'');
+
+                for v in &vars[1..] {
+                    s.push(' ');
+                    s.push_str(&v.to_string());
+                }
+                
+                s.push_str(">");
+                
+                let var = var.to_string();
+                s.push_str(&var);
+                s.push_str("</a>");
+
+                Some(Var::String(s))
+            },
             _ => { None }
         }
     }
