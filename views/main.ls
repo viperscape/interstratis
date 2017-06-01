@@ -1,5 +1,15 @@
+def root
+    title "interstratis"
+    desc "interactive adventures"
+
+;
+
+
 root
-    emit ["<h3>interstratis</h3>"
-         "<h4>interactive adventures</h4>"]
+    @root.title (tag) h3
+    @root.desc (tag) h4
+    
+    emit [root.title
+         root.desc]
 
 ;

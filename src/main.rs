@@ -22,7 +22,6 @@ use std::collections::HashMap;
 
 
 struct App {
-    views: Vec<View>,
     stories: Stories,
     cache: HashMap<u32, (EvaluatorState,Env)>,
 }
@@ -30,9 +29,7 @@ struct App {
 impl Default for App {
     fn default () -> App {
         let stories = Stories::default();
-        let view = View::new("./views/main.ls").expect("Main view missing");
         App {
-            views: vec![view],
             stories: stories,
             cache: HashMap::new(),
         }
@@ -46,8 +43,9 @@ fn main() {
         let mut empty = Empty;
         router!(rqs,
                 (GET) (/) => {
-                    if let Ok(mut app) = app.lock() {
-                        let mut rsp = app.views[0].render();
+                    if let Ok(app) = app.lock() {
+                        let mut view = View::new("./views/main.ls").expect("Main view missing");
+                        let mut rsp = view.render();
                         
                         for p in app.stories.get_paths() {
                             let s = format!("<a href='/stories/{}'>{}</a><br>", p,p);
