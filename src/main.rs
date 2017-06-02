@@ -21,6 +21,14 @@ use std::sync::{Arc,Mutex};
 use std::collections::HashMap;
 
 
+#[cfg(release)]
+const SERVER_ADDR: &'static str = "localhost:80";
+
+#[cfg(not(release))]
+const SERVER_ADDR: &'static str = "localhost:6060";
+
+
+
 struct App {
     stories: Stories,
     cache: HashMap<u32, (EvaluatorState,Env)>,
@@ -39,7 +47,7 @@ impl Default for App {
 fn main() {
     let app = Arc::new(Mutex::new(App::default()));
     
-    rouille::start_server("localhost:6060", move |rqs| {
+    rouille::start_server(SERVER_ADDR, move |rqs| {
         let mut empty = Empty;
         router!(rqs,
                 (GET) (/) => {
