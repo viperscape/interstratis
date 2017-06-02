@@ -21,10 +21,10 @@ use std::sync::{Arc,Mutex};
 use std::collections::HashMap;
 
 
-#[cfg(release)]
+#[cfg(not(debug_assertions))]
 const SERVER_ADDR: &'static str = "localhost:80";
 
-#[cfg(not(release))]
+#[cfg(debug_assertions)]
 const SERVER_ADDR: &'static str = "localhost:6060";
 
 
