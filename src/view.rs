@@ -35,12 +35,16 @@ impl View {
         let eval = Evaluator::new(&mut self.env, &mut data); // NOTE: unless we save env, this will mut over time
 
         for (mut vars,_) in eval {
+            r.push_str("<div>"); // split each step with a divider
+            
             for var in vars.drain(..) {
                 match var {
                     Var::String(s) => r.push_str(s.as_str()),
                     _ => {},
                 }
             }
+
+            r.push_str("</div>");
         }
 
         r
