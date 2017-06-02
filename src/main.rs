@@ -19,9 +19,18 @@ use view::View;
 
 use std::sync::{Arc,Mutex};
 use std::collections::HashMap;
+use std::process::Command;
+use std::env;
+use std::thread;
 
 
 const SERVER_ADDR: &'static str = "localhost:6060";
+
+#[cfg(any(not(unix)))]
+const EXEC: &'static str = "lifecycle.exe";
+
+#[cfg(any(unix))]
+const EXEC: &'static str = "lifecycle";
 
 
 struct App {
@@ -40,6 +49,7 @@ impl Default for App {
 }
 
 fn main() {
+    let reboot_id = env::var("STRATIS_REBOOT").expect("STRATIS_REBOOT id missing");
     let app = Arc::new(Mutex::new(App::default()));
     
     rouille::start_server(SERVER_ADDR, move |rqs| {
@@ -115,7 +125,18 @@ fn main() {
                     
                     Response::redirect_301("/")
                 },
-                _ => Response::html("<a href='/'>Nothing here</a>")
+                (POST) (/reboot/{id: String}) => {
+                    let valid = id == reboot_id;
+                    println!("request to shutdown: {:?}",valid);
+                    if valid {
+                        let targ = format!("./target/debug/{}",EXEC);
+                        let _ = Command::new(&targ).spawn();
+                        thread::spawn(|| { thread::sleep(std::time::Duration::new(0,500)); std::process::exit(1); });
+                    }
+                    
+                    Response::html("")
+                },
+                _ => Response::empty_404()
                 
                 )
     });
