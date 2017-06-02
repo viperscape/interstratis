@@ -21,12 +21,7 @@ use std::sync::{Arc,Mutex};
 use std::collections::HashMap;
 
 
-#[cfg(not(debug_assertions))]
-const SERVER_ADDR: &'static str = "localhost:80";
-
-#[cfg(debug_assertions)]
 const SERVER_ADDR: &'static str = "localhost:6060";
-
 
 
 struct App {
