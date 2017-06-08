@@ -34,6 +34,7 @@ impl View {
         let mut r = String::new();
         let eval = Evaluator::new(&mut self.env, &mut data); // NOTE: unless we save env, this will mut over time
 
+        r.push_str("<!DOCTYPE html><html>");
         for (mut vars,_) in eval {
             r.push_str("<div>"); // split each step with a divider
             
@@ -46,6 +47,7 @@ impl View {
 
             r.push_str("</div>");
         }
+        r.push_str("</html>");
 
         r
     }

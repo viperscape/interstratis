@@ -59,7 +59,8 @@ fn main() {
                     if let Ok(app) = app.lock() {
                         let mut view = View::new("./views/main.ls").expect("Main view missing");
                         let mut rsp = view.render();
-                        
+
+                        // NOTE: we want this to instead happen inside view-render stage
                         for p in app.stories.get_paths() {
                             let s = format!("<a href='/stories/{}'>{}</a><br>", p,p);
                             rsp.push_str(&s);
@@ -90,13 +91,16 @@ fn main() {
                             let mut rsp = format!("Story {}<br>", story);
                             let mut ev = state.as_eval(env,&mut empty);
                             
+                            rsp.push_str("<!DOCTYPE html><html>");
+                            
                             if let Some((mut vars,_node)) = ev.next() {
                                 let link = format!("<a href='/stories/{}/{}'>continue</a></br>",story,id);
                                 rsp.push_str(&link);
                                 
                                 for var in vars.drain(..) {
+                                    rsp.push_str("<div>");
                                     rsp.push_str(&var.to_string());
-                                    rsp.push_str("<br>");
+                                    rsp.push_str("</div>");
                                 }
                             }
                             else {
@@ -104,6 +108,8 @@ fn main() {
                                 let link = format!(" | <a href='/stories/{}/restart'>Restart</a>",id);
                                 rsp.push_str(&link);
                             }
+
+                            rsp.push_str("</html>");
 
                             *state = ev.save();
 
