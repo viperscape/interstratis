@@ -5,8 +5,7 @@ extern crate rand;
 
 use rand::random;
 
-use lichen::eval::{Eval,Evaluator,EvaluatorState};
-use lichen::var::Var;
+use lichen::eval::{Evaluator,EvaluatorState,Empty};
 use lichen::parse::Env;
 
 use rouille::{Response};
@@ -76,6 +75,9 @@ fn main() {
                         let id = random::<u32>();
                         
                         if let Some(mut env) = app.stories.parse(&story) {
+                            let _ = env.insert_var("meta", "name".to_owned(), story.clone().into());
+                            let _ = env.insert_var("meta", "id".to_owned(), (id as f32).into());
+                            
                             let state = { Evaluator::new(&mut env, &mut empty).save() };
                             app.cache.insert(id, (state, env));
                         }
@@ -88,10 +90,13 @@ fn main() {
                 (GET) (/stories/{story: String}/{id: u32}) => {
                     if let Ok(mut app) = app.lock() {
                         if let Some(&mut (ref mut state, ref mut env)) = app.cache.get_mut(&id) {
-                            let mut rsp = format!("Story {}<br>", story);
+                            let mut rsp = String::new();
+
                             let mut ev = state.as_eval(env,&mut empty);
                             
                             rsp.push_str("<!DOCTYPE html><html>");
+                            let story_ = format!("Story {}<br>", story);
+                            rsp.push_str(&story_);
                             
                             if let Some((mut vars,_node)) = ev.next() {
                                 let link = format!("<a href='/stories/{}/{}'>continue</a></br>",story,id);
@@ -146,22 +151,4 @@ fn main() {
                 
                 )
     });
-}
-
-
-struct Empty;
-impl Eval for Empty {
-    #[allow(unused_variables)]
-    fn get (&self, path: Option<Vec<&str>>, lookup: &str) -> Option<Var> {
-        None
-    }
-
-    #[allow(unused_variables)]
-    fn set (&mut self, path: Option<Vec<&str>>, lookup: &str, var: Var) {
-    }
-
-    #[allow(unused_variables)]
-    fn call (&mut self, var: Var, fun: &str, vars: &Vec<Var>) -> Option<Var> {
-        None
-    }
 }
