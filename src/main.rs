@@ -96,6 +96,8 @@ fn main() {
                         if let Some(&mut (ref mut state, ref mut env)) = app.cache.get_mut(&id) {
                             let mut ev = state.as_eval(env,&mut empty);
                             ev.advance(node);
+                            *state = ev.save();
+                            
                             return Response::redirect_301(format!("/stories/{}/{}",story,id))
                         }
                     }
