@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use std::process::Command;
 use std::env;
 use std::thread;
+use std::time::{Duration,Instant};
 
 
 const SERVER_ADDR: &'static str = "localhost:6060";
@@ -35,6 +36,7 @@ const EXEC: &'static str = "lifecycle";
 struct App {
     stories: Stories,
     cache: HashMap<u32, (EvaluatorState,Env)>,
+    last_reboot: Instant
 }
 
 impl Default for App {
@@ -43,6 +45,7 @@ impl Default for App {
         App {
             stories: stories,
             cache: HashMap::new(),
+            last_reboot: Instant::now()
         }
     }
 }
@@ -137,14 +140,20 @@ fn main() {
                     Response::redirect_301(format!("/stories/{}",story))
                 },
                 (POST) (/reboot/{id: String}) => {
-                    let valid = id == reboot_id;
-                    println!("request to shutdown: {:?}",valid);
-                    if valid {
-                        let targ = format!("./target/debug/{}",EXEC);
-                        let _ = Command::new(&targ).spawn();
-                        thread::spawn(|| { thread::sleep(std::time::Duration::new(0,500)); std::process::exit(1); });
+                    if let Ok(mut app) = app.lock() {
+                        if app.last_reboot.elapsed() > Duration::new(10,0) { //only reboot every 10 sec
+                            app.last_reboot = Instant::now(); //update
+                            
+                            let valid = id == reboot_id;
+                            println!("request to shutdown: {:?}",valid);
+                            if valid {
+                                let targ = format!("./target/debug/{}",EXEC);
+                                let _ = Command::new(&targ).spawn();
+                                thread::spawn(|| { thread::sleep(Duration::new(0,500)); std::process::exit(1); });
+                            }
+                        }
                     }
-                    
+                        
                     Response::html("")
                 },
                 _ => Response::empty_404()
