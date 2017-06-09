@@ -140,6 +140,7 @@ fn main() {
                                             let link = format!("<br><a href='/stories/{}/{}'>continue</a>",story,id);
                                             rsp.push_str(&link);
                                         },
+                                        _ => {},
                                     }
                                 }
                                 else {

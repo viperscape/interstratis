@@ -23,7 +23,7 @@ tavern
     
     if player.drunk "Talk to cloaked figure" next:await tavern-cloaked-figure
 
-    next:now tavern #restart
+    next:restart
 ;
 
 tavern-look
