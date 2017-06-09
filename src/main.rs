@@ -7,6 +7,7 @@ use rand::random;
 
 use lichen::eval::{Evaluator,EvaluatorState,Empty};
 use lichen::parse::Env;
+use lichen::source::Next;
 
 use rouille::{Response};
 
@@ -85,7 +86,18 @@ fn main() {
                             app.cache.insert(id, (state, env));
                         }
                         
-                        return Response::redirect_301(format!("/stories/{}/{}",story,id))
+                        return Response::redirect_300(format!("/stories/{}/{}",story,id))
+                    }
+
+                    Response::empty_404()
+                },
+                (GET) (/stories/{story: String}/{id: u32}/{node: String}) => {
+                    if let Ok(mut app) = app.lock() {
+                        if let Some(&mut (ref mut state, ref mut env)) = app.cache.get_mut(&id) {
+                            let mut ev = state.as_eval(env,&mut empty);
+                            ev.advance(node);
+                            return Response::redirect_300(format!("/stories/{}/{}",story,id))
+                        }
                     }
 
                     Response::empty_404()
@@ -100,10 +112,39 @@ fn main() {
                             rsp.push_str("<!DOCTYPE html><html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
                             let story_ = format!("Story {}<br>", story);
                             rsp.push_str(&story_);
-                            
-                            if let Some((mut vars,_node)) = ev.next() {
-                                let link = format!("<a href='/stories/{}/{}'>continue</a>",story,id);
-                                rsp.push_str(&link);
+
+                            if let Some((mut vars, next)) = ev.next() {
+                                if let Some(next) = next {
+                                    match next {
+                                        Next::Now(_) => {
+                                            let link = format!("<a href='/stories/{}/{}'>continue</a>",story,id);
+                                            rsp.push_str(&link);
+                                        },
+                                        Next::Await(node) => {
+                                            let link = format!("<a href='/stories/{}/{}'>continue</a>",story,id);
+                                            rsp.push_str(&link);
+
+                                            // NOTE: we arbitrarily call this leave, but really we should generalize this
+                                            let link = format!(" | <a href='/stories/{}/{}/{}'>leave</a>",story,id,node);
+                                            rsp.push_str(&link);
+                                        },
+                                        Next::Select(selects) => {
+                                            for (name,node) in selects.iter() {
+                                                let link = format!("<a href='/stories/{}/{}/{}'>{}</a><br>",
+                                                                   story,id,node[0].to_string(),name);
+                                                rsp.push_str(&link);
+                                            }
+
+                                            let link = format!("<br><a href='/stories/{}/{}'>continue</a>",story,id);
+                                            rsp.push_str(&link);
+                                        },
+                                    }
+                                }
+                                else {
+                                    let link = format!("<a href='/stories/{}/{}'>continue</a>",story,id);
+                                    rsp.push_str(&link);
+                                }
+                                
                                 
                                 for var in vars.drain(..) {
                                     rsp.push_str("<div>");
@@ -126,7 +167,7 @@ fn main() {
                         else {
                             // cache id is invalid, some browsers cache this!
                             // lets redirect them again to recreate the id
-                            return Response::redirect_301(format!("/stories/{}",story))
+                            return Response::redirect_300(format!("/stories/{}",story))
                         }
                     }
 
@@ -137,7 +178,7 @@ fn main() {
                         let _ = app.cache.remove(&id);
                     }
                     
-                    Response::redirect_301(format!("/stories/{}",story))
+                    Response::redirect_300(format!("/stories/{}",story))
                 },
                 (POST) (/reboot/{id: String}) => {
                     if let Ok(mut app) = app.lock() {
