@@ -94,12 +94,12 @@ fn main() {
 
                             let mut ev = state.as_eval(env,&mut empty);
                             
-                            rsp.push_str("<!DOCTYPE html><html>");
+                            rsp.push_str("<!DOCTYPE html><html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
                             let story_ = format!("Story {}<br>", story);
                             rsp.push_str(&story_);
                             
                             if let Some((mut vars,_node)) = ev.next() {
-                                let link = format!("<a href='/stories/{}/{}'>continue</a></br>",story,id);
+                                let link = format!("<a href='/stories/{}/{}'>continue</a>",story,id);
                                 rsp.push_str(&link);
                                 
                                 for var in vars.drain(..) {
