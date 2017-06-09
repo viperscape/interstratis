@@ -8,7 +8,7 @@ root
 ;
 
 intro
-    if !this.visited [
+    emit [
        "Welcome"
        "Interstratis is about sharing stories"
        "Creating adventures"
