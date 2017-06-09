@@ -86,7 +86,7 @@ fn main() {
                             app.cache.insert(id, (state, env));
                         }
                         
-                        return Response::redirect_300(format!("/stories/{}/{}",story,id))
+                        return Response::redirect_301(format!("/stories/{}/{}",story,id))
                     }
 
                     Response::empty_404()
@@ -96,7 +96,7 @@ fn main() {
                         if let Some(&mut (ref mut state, ref mut env)) = app.cache.get_mut(&id) {
                             let mut ev = state.as_eval(env,&mut empty);
                             ev.advance(node);
-                            return Response::redirect_300(format!("/stories/{}/{}",story,id))
+                            return Response::redirect_301(format!("/stories/{}/{}",story,id))
                         }
                     }
 
@@ -167,7 +167,7 @@ fn main() {
                         else {
                             // cache id is invalid, some browsers cache this!
                             // lets redirect them again to recreate the id
-                            return Response::redirect_300(format!("/stories/{}",story))
+                            return Response::redirect_301(format!("/stories/{}",story))
                         }
                     }
 
@@ -178,7 +178,7 @@ fn main() {
                         let _ = app.cache.remove(&id);
                     }
                     
-                    Response::redirect_300(format!("/stories/{}",story))
+                    Response::redirect_301(format!("/stories/{}",story))
                 },
                 (POST) (/reboot/{id: String}) => {
                     if let Ok(mut app) = app.lock() {
