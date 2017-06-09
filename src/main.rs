@@ -180,7 +180,7 @@ fn main() {
                         let _ = app.cache.remove(&id);
                     }
                     
-                    Response::redirect_301(format!("/stories/{}",story))
+                    Response::redirect_301(format!("/"))
                 },
                 (POST) (/reboot/{id: String}) => {
                     if let Ok(mut app) = app.lock() {
