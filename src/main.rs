@@ -110,7 +110,7 @@ fn main() {
                             }
                             else {
                                 rsp.push_str("<a href='/'>Finished</a>");
-                                let link = format!(" | <a href='/stories/{}/restart'>Restart</a>",id);
+                                let link = format!(" | <a href='/stories/{}/{}/restart'>Restart</a>",story,id);
                                 rsp.push_str(&link);
                             }
 
@@ -129,12 +129,12 @@ fn main() {
 
                     Response::empty_404()
                 },
-                (GET) (/stories/{id: u32}/restart) => {
+                (GET) (/stories/{story: String}/{id: u32}/restart) => {
                     if let Ok(mut app) = app.lock() {
                         let _ = app.cache.remove(&id);
                     }
                     
-                    Response::redirect_301("/")
+                    Response::redirect_301(format!("/stories/{}",story))
                 },
                 (POST) (/reboot/{id: String}) => {
                     let valid = id == reboot_id;
