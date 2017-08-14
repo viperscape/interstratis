@@ -1,14 +1,5 @@
-def meta
-
-;
-
-def player
-    drunk false
-
-;
-
 tavern-enter
-    if !this.visited "Welcome to the tavern"
+    if !player.visited_tavern "Welcome to the tavern"
     or "The tavern door swings open"
 
     if player.drunk "Back so soon? (bar tender)"
@@ -17,11 +8,12 @@ tavern-enter
 ;
 
 tavern
+    @player.visited_tavern true
     next:select {"Have a drink" bar,
                 "Look around" tavern-look,
                 "Leave" tavern-exit}
     
-    if player.drunk "Talk to cloaked figure" next:await tavern-cloaked-figure
+    if player.drunk "Talk to cloaked figure?" next:await tavern-cloaked-figure
 
     next:restart
 ;
@@ -33,15 +25,31 @@ tavern-look
 ;
 
 tavern-cloaked-figure
-    emit "What do you want, fool"
+    emit "Keep it to yourself, fool"
 
 ;
 
 tavern-exit
     emit "See ya, stranger (bar tender)"
+    next:now town
+;
+
+town
+    emit "You see a small tavern"
+    next:select {"Sleep?" sleep,
+                "Enter tavern?" tavern-enter}
+;
+
+sleep
+    next:exit
 
 ;
 
 root
     next:now tavern-enter
+;
+
+bar
+    @player.drunk true
+
 ;
