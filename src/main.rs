@@ -23,9 +23,9 @@ use stories::Stories;
 
 use std::sync::{Arc,Mutex};
 use std::collections::HashMap;
-use std::process::Command;
+//use std::process::Command;
 use std::env;
-use std::thread;
+//use std::thread;
 use std::time::{Duration,Instant};
 
 
@@ -225,10 +225,13 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
     server.get("/stories", middleware! {
         |req, res|        
         if let Ok(mut app) = app.lock() {
-            //""
+            let mut map = HashMap::new();
+            map.insert("story".to_owned(), app.stories.get_paths());
+            
+            return res.render("views/stories.html", &map);
         }
-        
-        return res.redirect("/story/hello_world") //for now just push out to hello_world example
+
+        ""
     });
 }
 
