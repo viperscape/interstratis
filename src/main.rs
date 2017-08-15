@@ -7,11 +7,11 @@ use rand::random;
 
 use lichen::eval::{Evaluator,EvaluatorState};
 use lichen::env::Env;
-use lichen::source::Next;
+//use lichen::source::Next;
 
 
 use cookie::Cookie;
-use nickel::{Nickel, HttpRouter, FormBody};
+use nickel::{Nickel, HttpRouter};//, FormBody};
 use nickel::extensions::Redirect;
 use nickel::Request;
 
@@ -39,9 +39,24 @@ const EXEC: &'static str = "lifecycle";
 
 pub struct Client {
     session: Instant,
+    story: Option<String>,
     state: EvaluatorState,
     env: Env,
 }
+
+impl Default for Client {
+    fn default() -> Client {
+        let mut env = Env::empty();
+        let state = Evaluator::new(&mut env).save();
+        
+        Client { session: Instant::now(),
+                 env: env,
+                 state: state,
+                 story: None }
+    }
+}
+
+
 pub type Clients = HashMap<String,Client>;
 struct App {
     stories: Stories,
@@ -61,17 +76,27 @@ impl Default for App {
 }
 
 impl App {
-    fn get_client<'c> (&'c self, req: &Request) -> Option<&'c Client> {
-        if let Some(cookies) =  req.origin.headers.get_raw("Cookie") {
+    fn parse_sid<'c> (&self, req: &'c Request) -> Option<String> {
+        if let Some(cookies) = req.origin.headers.get_raw("Cookie") {
             let cookies = parse_cookies(cookies);
-            if let Some(sid) = get_cookie("sid", &cookies) {
-                return self.clients.get(sid)
-                //if let Some(c) = app.clients.get(sid) {
-                //if c.session.elapsed() < Duration::from_secs(max_age) {
-                //    return c
-                //}
-                //}
-            }
+            return get_cookie("sid", &cookies)
+        }
+
+        None
+    }
+    
+    
+    fn get_client<'c> (&'c self, req: &Request) -> Option<&'c Client> {
+        if let Some(ref sid) = self.parse_sid(req) {
+            return self.clients.get(sid)
+        }
+
+        None
+    }
+
+    fn get_client_mut<'c> (&'c mut self, req: &Request) -> Option<&'c mut Client> {
+        if let Some(ref sid) = self.parse_sid(req) {
+            return self.clients.get_mut(sid)
         }
 
         None
@@ -79,14 +104,12 @@ impl App {
 
     fn add_client (&mut self) -> Vec<u8> {
         let sid = random::<u64>() .to_string();
-        let sid = Cookie::new("sid", sid.clone()).to_string();
+        let sid_cookie = Cookie::new("sid", sid.clone()).to_string();
 
-        let mut env = Env::empty();
-        let state = Evaluator::new(&mut env).save();
+        let client = Client::default();
         
-        let client = Client { session: Instant::now(), env: env, state: state };
-        self.clients.insert(sid.clone(),client);
-        sid.as_bytes().to_vec()
+        self.clients.insert(sid,client);
+        sid_cookie.as_bytes().to_vec()
     }
 }
 
@@ -99,16 +122,65 @@ fn main() {
     server.listen("0.0.0.0:6063");
 }
 
-fn apply_routes(server: &mut Nickel, app: &Arc<Mutex<App>>) {
-    let app = app.clone();
+fn lock_err() -> &'static str {
+    "error on posioned mutex"
+}
+
+fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
+    let app = app_.clone();
     server.get("/", middleware! {
-        |req, mut res|
+        |req, mut res|        
         if let Ok(mut app) = app.lock() {
+            if let Some(c) = app.get_client(req) {
+                if let Some(ref story) = c.story {
+                    return res.redirect(format!("/story/{:?}",story))
+                }
+
+                return res.redirect("/stories")
+            }
+            
             let sid = app.add_client();
             res.headers_mut().set_raw("Set-Cookie",
                                       vec![sid]);
+            return res.redirect("/stories")
         }
+        
+        lock_err()
+    });
+
+    let app = app_.clone();
+    server.get("/story/:story", middleware! {
+        |req, res|
+        if let Ok(mut app) = app.lock() {
+            if let Some(story) = req.param("story") {
+                if let Some(env) = app.stories.parse(story) {
+                    if let Some(ref mut c) = app.get_client_mut(req) {
+                        c.env = env;
+                        c.story = Some(story.to_owned());
+                        c.session = Instant::now();
+                        return res.redirect(format!("/story/{}/",story))
+                    }
+                }
+            }
+        }
+
         ""
+    });
+
+    let app = app_.clone();
+    server.get("/story/:story/", middleware! {
+        |req, res|
+        ""
+    });
+
+    let app = app_.clone();
+    server.get("/stories", middleware! {
+        |req, res|        
+        if let Ok(mut app) = app.lock() {
+            //""
+        }
+        
+        return res.redirect("/story/hello_world") //for now just push out to hello_world example
     });
 }
 
@@ -129,11 +201,11 @@ fn parse_cookies(raw: &[Vec<u8>]) -> Vec<Cookie> {
     cookies
 }
 
-fn get_cookie<'a>(name: &str, cookies: &'a[Cookie]) -> Option<&'a str> {
+fn get_cookie(name: &str, cookies: &[Cookie]) -> Option<String> {
     for c in cookies {
         let kv = c.name_value();
         if kv.0 == name {
-            return Some(kv.1)
+            return Some(kv.1.to_owned())
         }
     }
 

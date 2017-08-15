@@ -57,14 +57,16 @@ impl Stories {
     }
 
     pub fn parse (&self, story: &str) -> Option<Env> {
-        if let Ok(h) = fs::File::open(&self.paths.get(story).expect("Story not found")) {
-            let mut r = BufReader::new(h);
-            let mut src = String::new();
-            if let Ok(rb) = r.read_to_string(&mut src) {
-                if rb > 0 {
-                    let p = Parser::parse_blocks(&src);
-                    if let Ok(p) = p {
-                        return Some(p.into_env())
+        if let Some(ref story) = self.paths.get(story) {
+            if let Ok(h) = fs::File::open(story) {
+                let mut r = BufReader::new(h);
+                let mut src = String::new();
+                if let Ok(rb) = r.read_to_string(&mut src) {
+                    if rb > 0 {
+                        let p = Parser::parse_blocks(&src);
+                        if let Ok(p) = p {
+                            return Some(p.into_env())
+                        }
                     }
                 }
             }
