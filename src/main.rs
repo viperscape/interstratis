@@ -7,7 +7,7 @@ use rand::random;
 
 use lichen::eval::{Evaluator,EvaluatorState};
 use lichen::env::Env;
-//use lichen::source::Next;
+use lichen::source::Next;
 
 
 use cookie::Cookie;
@@ -171,35 +171,54 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
 
     let app = app_.clone();
     server.get("/story/:story/", middleware! {
-        |req, res|
-        let mut r = String::new();
-        
+        |req, res|        
         if let Ok(mut app) = app.lock() {
             if let Some(ref mut c) = app.get_client_mut(req) {
                 let mut ev = c.state.as_eval(&mut c.env);
 
-                let mut finished = false;
-                if let Some((mut vars, next)) = ev.next() {
+                //let mut finished = false;
+                let mut map = HashMap::new();
+                
+                while let Some((mut vars,next)) = ev.next() {
+                    // add in vars for rendering
+                    let mut v: Vec<String> = vec![];
                     for var in vars.drain(..) {
-                        r.push_str("<div>");
-                        r.push_str(&var.to_string());
-                        r.push_str("</div>");
+                        v.push(var.to_string());
                     }
+
+                    if v.len() > 0 {
+                        map.insert("vars".to_owned(), v);
+                    }
+
+                    // add in nodes for rendering
+                    if let Some(next) = next {
+                        match next {
+                            Next::Await(node) => {
+                                map.insert("next".to_owned(), vec![node.to_string()]);
+                            },
+                            Next::Select(selects) => {
+                                for (name,node) in selects.iter() {
+                                    map.insert("next".to_owned(), vec![node[0].to_string()]);
+                                }
+                            },
+                            _ => { continue }
+                        }
+
+                        break
+                    }
+
+                    if map.capacity() > 0 { break }
                 }
-                else { finished = true; }
 
                 c.state = ev.save();
+                return res.render("views/story.html", &map);
 
-                if finished {
+                /*if finished {
                     c.story = None;
                     return res.redirect("/")
-                }
+                }*/
             }
         }
-
-        // NOTE: we should actually impl a loop above this
-        if r.is_empty() { return res.redirect(format!("/story/{}/",req.param("story").unwrap())) }
-        else { r }
     });
 
     let app = app_.clone();
