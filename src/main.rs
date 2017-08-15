@@ -133,7 +133,7 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
         if let Ok(mut app) = app.lock() {
             if let Some(c) = app.get_client(req) {
                 if let Some(ref story) = c.story {
-                    return res.redirect(format!("/story/{:?}",story))
+                    return res.redirect(format!("/story/{}",story))
                 }
 
                 return res.redirect("/stories")
@@ -153,8 +153,10 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
         |req, res|
         if let Ok(mut app) = app.lock() {
             if let Some(story) = req.param("story") {
-                if let Some(env) = app.stories.parse(story) {
+                if let Some(mut env) = app.stories.parse(story) {
                     if let Some(ref mut c) = app.get_client_mut(req) {
+                        // update the client
+                        c.state = { Evaluator::new(&mut env).save() };
                         c.env = env;
                         c.story = Some(story.to_owned());
                         c.session = Instant::now();
@@ -170,7 +172,34 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
     let app = app_.clone();
     server.get("/story/:story/", middleware! {
         |req, res|
-        ""
+        let mut r = String::new();
+        
+        if let Ok(mut app) = app.lock() {
+            if let Some(ref mut c) = app.get_client_mut(req) {
+                let mut ev = c.state.as_eval(&mut c.env);
+
+                let mut finished = false;
+                if let Some((mut vars, next)) = ev.next() {
+                    for var in vars.drain(..) {
+                        r.push_str("<div>");
+                        r.push_str(&var.to_string());
+                        r.push_str("</div>");
+                    }
+                }
+                else { finished = true; }
+
+                c.state = ev.save();
+
+                if finished {
+                    c.story = None;
+                    return res.redirect("/")
+                }
+            }
+        }
+
+        // NOTE: we should actually impl a loop above this
+        if r.is_empty() { return res.redirect(format!("/story/{}/",req.param("story").unwrap())) }
+        else { r }
     });
 
     let app = app_.clone();
