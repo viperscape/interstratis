@@ -1,5 +1,6 @@
-use lichen::parse::{Parser, Env};
+use lichen::parse::Parser;
 use lichen::eval::{Evaluator,Eval};
+use lichen::env::Env;
 use lichen::var::Var;
 
 use std::fs;

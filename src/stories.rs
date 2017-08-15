@@ -1,6 +1,7 @@
 extern crate lichen;
 
-use self::lichen::parse::{Parser, Env};
+use self::lichen::parse::Parser;
+use self::lichen::env::Env;
 
 use std::fs;
 use std::path::PathBuf;

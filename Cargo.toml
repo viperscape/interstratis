@@ -3,7 +3,12 @@ name = "interstratis"
 version = "0.1.0"
 authors = ["viperscape <chrisfgill@gmail.com>"]
 
+[[bin]]
+name = "interstratis"
+
 [dependencies]
-rouille = "1.0"
-lichen = "0.2"
+lichen = "0.3"
 rand = "0.3"
+
+nickel = "0.10"
+cookie = "0.9"
