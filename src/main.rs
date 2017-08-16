@@ -2,11 +2,13 @@
 extern crate lichen;
 extern crate rand;
 extern crate cookie;
+extern crate rustc_serialize;
 
 use rand::random;
 
 use lichen::eval::{Evaluator,EvaluatorState};
 use lichen::env::Env;
+use lichen::var::Var;
 use lichen::source::Next;
 
 
@@ -171,50 +173,66 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
 
     let app = app_.clone();
     server.get("/story/:story/", middleware! {
-        |req, res|        
+        |req, res|
         if let Ok(mut app) = app.lock() {
             if let Some(ref mut c) = app.get_client_mut(req) {
                 let mut ev = c.state.as_eval(&mut c.env);
 
                 let mut map = HashMap::new();
+                let mut nexts: Vec<NextResult> = vec![];
+                let mut vars: Vec<String> = vec![];
                 
-                while let Some((mut vars,next)) = ev.next() {
+                while let Some((mut v,next)) = ev.next() {
                     // add in vars for rendering
-                    let mut v: Vec<String> = vec![];
-                    for var in vars.drain(..) {
-                        v.push(var.to_string());
-                    }
-
-                    if v.len() > 0 {
-                        map.insert("vars".to_owned(), v);
+                    for var in v.drain(..) {
+                        vars.push(var.to_string());
                     }
 
                     // add in nodes for rendering
                     if let Some(next) = next {
                         match next {
                             Next::Await(node) => {
-                                map.insert("next".to_owned(), vec![node.to_string()]);
+                                let nr = NextResult {
+                                        name: node.to_owned(),
+                                        block: node.to_string(),
+                                };
+                                nexts.push(nr);
                             },
                             Next::Select(selects) => {
                                 for (name,node) in selects.iter() {
-                                    map.insert("next".to_owned(), vec![node[0].to_string()]);
+                                    let nr = NextResult {
+                                        name: name.to_owned(),
+                                        block: node[0].to_string(),
+                                    };
+                                    nexts.push(nr);
                                 }
                             },
                             _ => { }
                         }
                     }
 
-                    if map.capacity() > 0 { break }
+                    if vars.len() > 0 ||
+                        nexts.len() > 0 { break }
                 }
 
                 c.state = ev.save();
 
-                if map.capacity() > 0 { 
-                    return res.render("views/story.html", &map);
-                }
-                else {
+                
+                if vars.len() < 1 &&
+                    nexts.len() < 1 {
                     c.story = None;
                     return res.redirect("/");
+                }
+
+                if let Some(story) = req.param("story") {
+                    let er = EmitResult {
+                        story: story.to_owned(),
+                        vars: vars,
+                        nexts: nexts
+                    };
+                    map.insert("result".to_owned(),er);
+                    
+                    return res.render("views/story.html", &map);
                 }
                 
             }
@@ -261,4 +279,18 @@ fn get_cookie(name: &str, cookies: &[Cookie]) -> Option<String> {
     }
 
     None
+}
+
+
+#[derive(RustcEncodable)]
+struct EmitResult {
+    vars: Vec<String>,
+    nexts: Vec<NextResult>,
+    story: String,
+}
+
+#[derive(RustcEncodable)]
+struct NextResult {
+    name: String, // formal name presented
+    block: String, //destination block
 }

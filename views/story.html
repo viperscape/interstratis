@@ -6,14 +6,15 @@
   </head>
   <body>
     <div>
-      {{#vars}}
+      {{#result.vars}}
       <div>{{.}}</div>
-      {{/vars}}
+      {{/result.vars}}
     </div>
     <div>
-      {{#next}}
-      <div>{{.}}</div>
-      {{/next}}
+      {{#result.nexts}}
+      <div><a href="/story/{{result.story}}/{{block}}">{{name}}</a></div>
+      {{/result.nexts}}
+      <div><a href="/story/{{result.story}}/">continue</a></div>
     </div>
   </body>
 </html>
