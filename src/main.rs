@@ -114,7 +114,7 @@ impl App {
 }
 
 fn main() {
-    let reboot_id = env::var("STRATIS_REBOOT").expect("STRATIS_REBOOT id missing");
+    //let reboot_id = env::var("STRATIS_REBOOT").expect("STRATIS_REBOOT id missing");
     let app = Arc::new(Mutex::new(App::default()));
     let mut server = Nickel::new();
     apply_routes(&mut server, &app);
@@ -176,7 +176,6 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
             if let Some(ref mut c) = app.get_client_mut(req) {
                 let mut ev = c.state.as_eval(&mut c.env);
 
-                //let mut finished = false;
                 let mut map = HashMap::new();
                 
                 while let Some((mut vars,next)) = ev.next() {
@@ -201,22 +200,23 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
                                     map.insert("next".to_owned(), vec![node[0].to_string()]);
                                 }
                             },
-                            _ => { continue }
+                            _ => { }
                         }
-
-                        break
                     }
 
                     if map.capacity() > 0 { break }
                 }
 
                 c.state = ev.save();
-                return res.render("views/story.html", &map);
 
-                /*if finished {
+                if map.capacity() > 0 { 
+                    return res.render("views/story.html", &map);
+                }
+                else {
                     c.story = None;
-                    return res.redirect("/")
-                }*/
+                    return res.redirect("/");
+                }
+                
             }
         }
     });
