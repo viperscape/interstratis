@@ -172,6 +172,23 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
     });
 
     let app = app_.clone();
+    server.get("/story/:story/:advance/", middleware! {
+        |req, res|
+        if let Ok(mut app) = app.lock() {
+            if let Some(ref mut c) = app.get_client_mut(req) {
+                let mut ev = c.state.as_eval(&mut c.env);
+                if let Some(advance) = req.param("advance") {
+                    ev.advance(advance.to_owned());
+                    c.state = ev.save();
+                    if let Some(story) = req.param("story") {
+                        return res.redirect(format!("/story/{}/",story))
+                    }
+                }
+            }
+        }
+    });
+    
+    let app = app_.clone();
     server.get("/story/:story/", middleware! {
         |req, res|
         if let Ok(mut app) = app.lock() {
