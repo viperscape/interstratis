@@ -56,8 +56,8 @@ impl Stories {
         p
     }
 
-    pub fn parse (&self, story: &str) -> Option<Env> {
-        if let Some(ref story) = self.paths.get(story) {
+    pub fn parse (&self, story_: &str) -> Option<Env> {
+        if let Some(ref story) = self.paths.get(story_) {
             if let Ok(h) = fs::File::open(story) {
                 let mut r = BufReader::new(h);
                 let mut src = String::new();
@@ -67,9 +67,11 @@ impl Stories {
                         if let Ok(p) = p {
                             return Some(p.into_env())
                         }
+                        else { println!("Unable to parse file {:?}", src); }
                     }
                 }
             }
+            else { println!("Unable to open file {}", story_); }
         }
 
         None

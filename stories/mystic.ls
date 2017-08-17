@@ -12,20 +12,19 @@ tavern
     next:select {"Have a drink" bar,
                 "Look around" tavern-look,
                 "Leave" tavern-exit}
-    
-    if player.drunk "Talk to cloaked figure?" next:await tavern-cloaked-figure
 
     next:restart
 ;
 
 tavern-look
     emit "You see a bartender, taking her time to make drinks. She seems to have a sour face on."
-    if player.drunk "You see a cloaked figure sitting in the corner."
+    if player.drunk ["You see a cloaked figure sitting in the corner."
+       "Talk to cloaked figure?" next:await tavern-cloaked-figure]
 
 ;
 
 tavern-cloaked-figure
-    emit "Keep it to yourself, fool"
+    emit "Keep it to yourself, fool!"
 
 ;
 
@@ -46,10 +45,13 @@ sleep
 ;
 
 root
+    emit ["Welcome to the story about the Mystic"
+         "You see a tavern with lights on and decide to enter"]
     next:now tavern-enter
 ;
 
 bar
+    emit "You take a gulp of a stiff drink" "You immediately feel the effects"
     @player.drunk true
 
 ;

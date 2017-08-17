@@ -8,7 +8,6 @@ use rand::random;
 
 use lichen::eval::{Evaluator,EvaluatorState};
 use lichen::env::Env;
-use lichen::var::Var;
 use lichen::source::Next;
 
 
@@ -26,18 +25,18 @@ use stories::Stories;
 use std::sync::{Arc,Mutex};
 use std::collections::HashMap;
 //use std::process::Command;
-use std::env;
+//use std::env;
 //use std::thread;
-use std::time::{Duration,Instant};
+use std::time::{Instant};
 
 
 const SERVER_ADDR: &'static str = "0.0.0.0:6060";
 
-#[cfg(any(not(unix)))]
-const EXEC: &'static str = "lifecycle.exe";
+//#[cfg(any(not(unix)))]
+//const EXEC: &'static str = "lifecycle.exe";
 
-#[cfg(any(unix))]
-const EXEC: &'static str = "lifecycle";
+//#[cfg(any(unix))]
+//const EXEC: &'static str = "lifecycle";
 
 pub struct Client {
     session: Instant,
@@ -63,7 +62,7 @@ pub type Clients = HashMap<String,Client>;
 struct App {
     stories: Stories,
     clients: Clients,
-    last_reboot: Instant,
+    _last_reboot: Instant,
 }
 
 impl Default for App {
@@ -72,7 +71,7 @@ impl Default for App {
         App {
             stories: stories,
             clients: HashMap::new(),
-            last_reboot: Instant::now(),
+            _last_reboot: Instant::now(),
         }
     }
 }
@@ -121,7 +120,7 @@ fn main() {
     let mut server = Nickel::new();
     apply_routes(&mut server, &app);
     
-    server.listen(SERVER_ADDR);
+    let _ = server.listen(SERVER_ADDR);
 }
 
 fn lock_err() -> &'static str {
@@ -165,6 +164,7 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
                         return res.redirect(format!("/story/{}/",story))
                     }
                 }
+                else { println!("Unable to parse story {}", story); }
             }
         }
 
@@ -200,6 +200,7 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
                 let mut vars: Vec<String> = vec![];
                 
                 while let Some((mut v,next)) = ev.next() {
+                    
                     // add in vars for rendering
                     for var in v.drain(..) {
                         vars.push(var.to_string());
@@ -210,8 +211,14 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
                         match next {
                             Next::Await(node) => {
                                 let nr = NextResult {
-                                        name: node.to_owned(),
-                                        block: node.to_string(),
+                                        name: "Yes".to_owned(),
+                                        block: node.to_string() + "/",
+                                };
+                                nexts.push(nr);
+
+                                let nr = NextResult {
+                                        name: "or No".to_owned(),
+                                        block: "".to_owned(),
                                 };
                                 nexts.push(nr);
                             },
@@ -219,10 +226,16 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
                                 for (name,node) in selects.iter() {
                                     let nr = NextResult {
                                         name: name.to_owned(),
-                                        block: node[0].to_string(),
+                                        block: node[0].to_string() + "/",
                                     };
                                     nexts.push(nr);
                                 }
+
+                                let nr = NextResult {
+                                        name: "Don't make a choice".to_owned(),
+                                        block: "".to_owned(),
+                                };
+                                nexts.push(nr);
                             },
                             _ => { }
                         }
@@ -233,12 +246,18 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
                 }
 
                 c.state = ev.save();
-
                 
-                if vars.len() < 1 &&
-                    nexts.len() < 1 {
+                if vars.len() < 1 && nexts.len() < 1 {
                     c.story = None;
-                    return res.redirect("/");
+                    return res.redirect("/stories");
+                }
+
+                if nexts.len() < 1 {
+                    let nr = NextResult {
+                        name: "Continue".to_owned(),
+                        block: "".to_owned(),
+                    };
+                    nexts.push(nr);
                 }
 
                 if let Some(story) = req.param("story") {
@@ -258,8 +277,12 @@ fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
 
     let app = app_.clone();
     server.get("/stories", middleware! {
-        |req, res|        
-        if let Ok(mut app) = app.lock() {
+        |req, res|
+        if let Ok(app) = app.lock() {
+            if !app.get_client(req).is_some() { // force cookie
+                return res.redirect("/");
+            }
+            
             let mut map = HashMap::new();
             map.insert("story".to_owned(), app.stories.get_paths());
             

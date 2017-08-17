@@ -2,6 +2,7 @@
 extern crate lichen;
 
 use lichen::parse::Parser;
+use lichen::eval::Evaluator;
 
 use std::fs;
 use std::path::PathBuf;
@@ -36,7 +37,15 @@ fn bitrot() {
             let mut src = String::new();
             if let Ok(_) = r.read_to_string(&mut src) {
                 match Parser::parse_blocks(&src) {
-                    Ok(b) => { b.into_env(); },
+                    Ok(b) => {
+                        let mut env = b.into_env();
+                        assert!(env.src.len() > 0);
+                        let mut ev = Evaluator::new(&mut env);
+                        println!("Evaluating {:?}", p.to_str());
+                        let (vars,next) = ev.next().expect("No values returned on eval");
+                        assert!(vars.len() > 0 ||
+                                next.is_some());
+                    },
                     Err(e) => { panic!("ERROR: Unable to parse source, {:?} -- {:}", p, e) }
                 }
             }
