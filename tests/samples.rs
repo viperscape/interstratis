@@ -26,7 +26,6 @@ fn bitrot() {
         }
     };
 
-    add_paths(&mut paths,"./views");
     add_paths(&mut paths,"./stories");
 
     assert!(paths.len() > 0);
