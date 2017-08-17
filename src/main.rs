@@ -31,7 +31,7 @@ use std::env;
 use std::time::{Duration,Instant};
 
 
-const SERVER_ADDR: &'static str = "localhost:6060";
+const SERVER_ADDR: &'static str = "0.0.0.0:6060";
 
 #[cfg(any(not(unix)))]
 const EXEC: &'static str = "lifecycle.exe";
@@ -121,7 +121,7 @@ fn main() {
     let mut server = Nickel::new();
     apply_routes(&mut server, &app);
     
-    server.listen("0.0.0.0:6063");
+    server.listen(SERVER_ADDR);
 }
 
 fn lock_err() -> &'static str {
