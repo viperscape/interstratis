@@ -21,11 +21,12 @@ tavern-look
     if player.drunk ["You see a cloaked figure sitting in the corner."
        "Talk to cloaked figure?" next:await tavern-cloaked-figure]
 
+    next:now tavern
 ;
 
 tavern-cloaked-figure
     emit "Keep it to yourself, fool!"
-
+    next:now tavern
 ;
 
 tavern-exit
@@ -37,6 +38,8 @@ town
     emit "You see a small tavern"
     next:select {"Sleep?" sleep,
                 "Enter tavern?" tavern-enter}
+
+    next:restart
 ;
 
 sleep
@@ -53,5 +56,5 @@ root
 bar
     emit "You take a gulp of a stiff drink" "You immediately feel the effects"
     @player.drunk true
-
+    next:now tavern
 ;
