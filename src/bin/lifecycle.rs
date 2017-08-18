@@ -9,7 +9,7 @@ use std::sync::{Arc,Mutex};
 
 
 pub fn main () {
-    let port = env::var("STRATIS_SERVICE").expect("STRATIS_REBOOT path missing");
+    let port = env::var("STRATIS_SERVICE").expect("STRATIS_SERVICE path missing");
     let key = env::var("STRATIS_REBOOT").expect("STRATIS_REBOOT path missing");
 
     let r = run_stratis();
@@ -25,7 +25,7 @@ pub fn main () {
 
 
 fn run_stratis () -> bool {
-    let dir = env::var("STRATIS_DIR").expect("STRATIS_SERVICE path missing");
+    let dir = env::var("STRATIS_DIR").expect("STRATIS_DIR path missing");
     Command::new("./interstratis.sh")
         .current_dir(&dir)
         .status().expect("failed to build").success()
