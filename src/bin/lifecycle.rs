@@ -1,15 +1,52 @@
+#[macro_use] extern crate nickel;
+use nickel::{Nickel, HttpRouter};
+
 use std::process::Command;
-use std::thread;
-use std::time::Duration;
+use std::time::{Duration,Instant};
 use std::env;
 
-pub fn main () {
-    let stratis_service = env::var("STRATIS_SERVICE").expect("STRATIS_SERVICE path missing");
-    thread::sleep(Duration::new(1,0));
-    
-    let r = Command::new("./inter-service.sh")
-        .current_dir(&stratis_service)
-        .status().expect("failed to build").success();
+use std::sync::{Arc,Mutex};
 
-    println!("Rebuilt interstratis service {:?}",r);
+
+pub fn main () {
+    let port = env::var("STRATIS_SERVICE").expect("STRATIS_REBOOT path missing");
+    let key = env::var("STRATIS_REBOOT").expect("STRATIS_REBOOT path missing");
+
+    let r = run_stratis();
+    println!("Rebuilt interstratis server {:?}",r);
+
+    let mut server = Nickel::new();
+    let last_cycle = Arc::new(Mutex::new(Instant::now()));
+    apply_routes(&mut server, key, &last_cycle);
+
+    println!("Running inter-service");
+    let _ = server.listen("0.0.0.0".to_owned() + &port);
+}
+
+
+fn run_stratis () -> bool {
+    let dir = env::var("STRATIS_DIR").expect("STRATIS_SERVICE path missing");
+    Command::new("./interstratis.sh")
+        .current_dir(&dir)
+        .status().expect("failed to build").success()
+}
+
+fn apply_routes(server: &mut Nickel, key_: String, last_cycle_: &Arc<Mutex<Instant>>) {
+    let last_cycle = last_cycle_.clone();
+    server.get("/cycle/:key", middleware! {
+        |req, _res|
+        if let Some(key) = req.param("key") {
+            if key == &key_ {
+                if let Ok(mut last) = last_cycle.lock() {
+                    if last.elapsed() > Duration::new(60,0) { //only reboot every so often
+                        *last = Instant::now(); //update
+                        let r = run_stratis();
+                        println!("Rebuilt interstratis server {:?}",r);
+                    }
+                }
+            }
+        }
+        
+        ""
+    });
 }

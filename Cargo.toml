@@ -4,7 +4,12 @@ version = "0.1.0"
 authors = ["viperscape <chrisfgill@gmail.com>"]
 
 [[bin]]
+name = "lifecycle"
+
+[[bin]]
 name = "interstratis"
+
+
 
 [dependencies]
 lichen = "0.3"
