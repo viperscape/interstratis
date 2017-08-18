@@ -8,7 +8,7 @@ name = "lifecycle"
 
 [[bin]]
 name = "interstratis"
-
+path = "src/main.rs"
 
 
 [dependencies]
