@@ -57,6 +57,6 @@ fn apply_routes(server: &mut Nickel, key_: String, last_cycle_: &Arc<Mutex<Insta
             }
         }
         
-        ""
+        "OK"
     });
 }
