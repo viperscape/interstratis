@@ -20,7 +20,8 @@ pub fn main () {
     apply_routes(&mut server, key, &last_cycle);
 
     println!("Running inter-service");
-    let _ = server.listen("0.0.0.0".to_owned() + &port);
+    let r = server.listen("0.0.0.0".to_owned() + &port);
+    println!("Listening: {:?}",r);
 }
 
 
