@@ -21,7 +21,7 @@ pub fn main () {
 
     println!("Running inter-service");
     let r = server.listen("0.0.0.0".to_owned() + &port);
-    println!("Listening: {:?}",r);
+    println!("Listening: {:?}",r.is_ok());
 }
 
 
