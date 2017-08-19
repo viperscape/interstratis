@@ -26,9 +26,15 @@ pub fn main () {
 
 fn run_stratis () -> bool {
     let dir = env::var("STRATIS_DIR").expect("STRATIS_DIR path missing");
-    Command::new("./interstratis.sh")
+    // run service script to pull repo, etc.
+    let _ = Command::new("./interstratis.sh")
         .current_dir(&dir)
-        .status().expect("failed to build").success()
+        .status().expect("failed to build").success();
+
+    // spawn executable manually
+    Command::new("./target/debug/interstratis")
+        .current_dir(&dir)
+        .spawn().is_ok()
 }
 
 fn apply_routes(server: &mut Nickel, key_: String, last_cycle_: &Arc<Mutex<Instant>>) {
