@@ -43,7 +43,7 @@ fn run_stratis () -> bool {
 
 fn apply_routes(server: &mut Nickel, key_: String, last_cycle_: &Arc<Mutex<Instant>>) {
     let last_cycle = last_cycle_.clone();
-    server.get("/cycle/:key", middleware! {
+    server.post("/cycle/:key", middleware! {
         |req, _res|
         if let Some(key) = req.param("key") {
             if key == &key_ {
