@@ -12,31 +12,19 @@ use lichen::source::Next;
 
 
 use cookie::Cookie;
-use nickel::{Nickel, HttpRouter};//, FormBody};
+use nickel::{Nickel, HttpRouter, StaticFilesHandler};
 use nickel::extensions::Redirect;
 use nickel::Request;
 
 mod stories;
 use stories::Stories;
 
-//mod view;
-//use view::View;
-
 use std::sync::{Arc,Mutex};
 use std::collections::HashMap;
-//Use std::process::Command;
-//use std::env;
-//use std::thread;
 use std::time::{Instant};
 
 
 const SERVER_ADDR: &'static str = "0.0.0.0:6060";
-
-//#[cfg(any(not(unix)))]
-//const EXEC: &'static str = "lifecycle.exe";
-
-//#[cfg(any(unix))]
-//const EXEC: &'static str = "lifecycle";
 
 pub struct Client {
     session: Instant,
@@ -62,7 +50,6 @@ pub type Clients = HashMap<String,Client>;
 struct App {
     stories: Stories,
     clients: Clients,
-    _last_reboot: Instant,
 }
 
 impl Default for App {
@@ -71,7 +58,6 @@ impl Default for App {
         App {
             stories: stories,
             clients: HashMap::new(),
-            _last_reboot: Instant::now(),
         }
     }
 }
@@ -115,7 +101,6 @@ impl App {
 }
 
 fn main() {
-    //let reboot_id = env::var("STRATIS_REBOOT").expect("STRATIS_REBOOT id missing");
     let app = Arc::new(Mutex::new(App::default()));
     let mut server = Nickel::new();
     apply_routes(&mut server, &app);
@@ -128,6 +113,8 @@ fn lock_err() -> &'static str {
 }
 
 fn apply_routes(server: &mut Nickel, app_: &Arc<Mutex<App>>) {
+    server.utilize(StaticFilesHandler::new("static/"));
+
     let app = app_.clone();
     server.get("/", middleware! {
         |req, mut res|        
